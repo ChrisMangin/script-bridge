@@ -8,6 +8,8 @@
     <img src="https://img.shields.io/badge/companion-Rust-orange" alt="Rust">
     <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
   </p>
+  <br>
+  <a href="docs/screenshots/dashboard.png"><img src="docs/screenshots/dashboard.png" alt="ScriptBridge dashboard showing six disabled example browser scripts" width="860"></a>
 </div>
 
 > [!IMPORTANT]
@@ -17,6 +19,29 @@
 
 
 ScriptBridge is a Tampermonkey-style userscript manager. **The browser extension is the main app.** It stores your browser scripts and runs them on matching pages. The optional **companion** is a separate headless Windows program. Once paired with the extension, it runs *external* scripts on your machine: Python, Rust, C, CMD, PowerShell and Node.
+
+## Screenshots
+
+Captured from the current extension with disabled documentation examples, not personal scripts. The companion is shown unpaired, with no token entered. Click any image for the full-size view.
+
+<table>
+<tr>
+  <td><a href="docs/screenshots/dashboard.png"><img src="docs/screenshots/dashboard.png" alt="Script dashboard with search, filters, tags and disabled example scripts" width="420"></a></td>
+  <td><a href="docs/screenshots/editor.png"><img src="docs/screenshots/editor.png" alt="Syntax-highlighted editor showing the Reading Mode example userscript" width="420"></a></td>
+</tr>
+<tr>
+  <td align="center"><em>Script dashboard with search, filters and tags</em></td>
+  <td align="center"><em>Built-in editor with syntax highlighting</em></td>
+</tr>
+<tr>
+  <td><a href="docs/screenshots/companion.png"><img src="docs/screenshots/companion.png" alt="Optional companion pairing screen in its unpaired state, with an empty token field" width="420"></a></td>
+  <td><a href="docs/screenshots/guide.png"><img src="docs/screenshots/guide.png" alt="Built-in ScriptBridge guide covering browser scripts, local execution and security limits" width="420"></a></td>
+</tr>
+<tr>
+  <td align="center"><em>Optional companion pairing and local execution guidance</em></td>
+  <td align="center"><em>Built-in guide and security notes</em></td>
+</tr>
+</table>
 
 ## Features
 
