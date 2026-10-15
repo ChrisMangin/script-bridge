@@ -47,13 +47,16 @@ with tempfile.TemporaryDirectory(prefix='sb-security-', dir=tmp) as work:
                 args=[f'--disable-extensions-except={root / "extension"}',
                       f'--load-extension={root / "extension"}',
                       '--disable-background-networking', '--no-first-run',
-                      '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost'])
+                      '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost, EXCLUDE 127.0.0.1'])
             workers = context.service_workers
             worker = workers[0] if workers else context.wait_for_event('serviceworker')
             extension_id = worker.url.split('/')[2]
             base = f'chrome-extension://{extension_id}'
             errors = []
             denied_requests = []
+            companion_responses = []
+            context.on('response', lambda response: companion_responses.append({'path': urlsplit(response.url).path, 'status': response.status, 'origin': response.request.headers.get('origin')}) if urlsplit(response.url).port == 9876 else None)
+            context.on('requestfailed', lambda request: companion_responses.append({'path': urlsplit(request.url).path, 'failure': request.failure}) if urlsplit(request.url).port == 9876 else None)
             fixture = 'http://scriptbridge.test/'
             payload = '\"><img src=x onerror="window.__pwn=1">'
 
@@ -210,7 +213,11 @@ with tempfile.TemporaryDirectory(prefix='sb-security-', dir=tmp) as work:
                 page.goto(base + '/dashboard.html#companion')
                 page.locator('#companion-token').fill(token)
                 page.locator('#btn-pair-companion').click()
-                expect(page.locator('#pair-status')).to_contain_text('Connected and authenticated')
+                try:
+                    expect(page.locator('#pair-status')).to_contain_text('Connected and authenticated')
+                except AssertionError:
+                    print(json.dumps({'pair_feedback': page.locator('#pair-feedback').inner_text(), 'requests': companion_responses, 'bound_id': json.loads((data / 'pairing.json').read_text()).get('extension_id'), 'errors': errors}), flush=True)
+                    raise
                 expect(page.locator('#companion-token')).to_have_value('')
                 check('actual Chromium origin paired and authenticated')
                 paired = json.loads((data / 'pairing.json').read_text())
