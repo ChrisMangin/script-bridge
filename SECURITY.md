@@ -1,12 +1,12 @@
 # Security Policy
 
-## Status: 3.0.0 fixes implemented, verification pending
+## Status: 3.0.0
 
-Release **3.0.0** (extension and companion) contains fixes for the two issues that held the earlier source (extension `2.0.0`, companion `1.0.0`). The fixes are implemented in source. **Independent verification and the final test pass are still in progress**, so 3.0.0 is not published and these fixes should be treated as unverified until that is complete.
+Version 3.0.0 implements authentication and removes the privileged page bridge that blocked the earlier source. Local regression and browser verification are documented in [docs/VERIFICATION.md](docs/VERIFICATION.md). This is not an independent security certification.
 
 This document describes what the code is designed to do. It is not an audit, and it does not claim that ScriptBridge has no vulnerabilities.
 
-### 1. Companion API: fixed, pending independent verification
+### 1. Companion API: authentication enforced
 
 *Was:* `127.0.0.1:9876` accepted any request with wildcard CORS and no token, so any web page in a local browser could create, run, schedule and delete scripts, read local files through file watch, and read script code, env vars and settings.
 
@@ -24,7 +24,7 @@ This document describes what the code is designed to do. It is not an audit, and
 - **Legacy dashboard retired.** `/` is a static information page with a strict CSP. The old embedded dashboard, settings page and guide are no longer embedded or served; other non-API paths return `404`.
 - **Input limits.** Script ids are restricted to safe file names. Dependency checks run only a fixed allowlist of programs with fixed arguments. File watch accepts only drive-letter absolute paths (no UNC or device paths, which could send Windows credentials to a remote host, no drive-relative paths, no alternate data streams) and refuses the companion's own data folder, so `pairing.json` cannot be read back through a script.
 
-### 2. Page bridge: removed by design, pending independent verification
+### 2. Page bridge: removed by design
 
 *Was:* `content.js` ran on every page and relayed any page script's `postMessage` to the extension to run external scripts, make `GM_xmlhttpRequest` calls with the extension's `<all_urls>` host permissions, use GM storage and show notifications.
 
@@ -45,7 +45,7 @@ What this does **not** change:
 - `@updateURL` updates are never applied silently, and update checks no longer open tabs on their own. The dashboard lists available updates; the install page shows a diff, and only the code you reviewed is saved when you confirm.
 - Install and update downloads (`script-url-policy.js`) allow only `http(s)` URLs without credentials, refuse redirects, send no credentials, and block `localhost`, `*.localhost` and literal loopback, private, link-local, CGNAT, documentation, multicast and reserved IPv4 addresses and non-global IPv6 addresses. **Limit:** a public hostname whose DNS resolves to a private address is not blocked. Update URLs that redirect (for example Greasy Fork) fail by design, and userscripts served from `localhost` or LAN dev servers can no longer be installed or updated by URL.
 - The worker validates every saved script record (id, category, language, field types). Malformed legacy records are hidden and never run, but are left in storage.
-- Imported external scripts are disabled, with a manual trigger, until you review and enable them.
+- Imported external scripts are disabled, with a manual trigger, until you review and enable them. Companion imports also disable scripts; overwritten ids lose schedules. Deleting a script removes its schedules; resetting data clears schedules and history. Browser-category scripts cannot run natively through run, stream, chain or schedule routes. Chains validate every entry before starting and contain at most 20 scripts.
 - Companion requests from the extension go only to the fixed loopback address, with no credentials, no redirects and no caching. The token is kept in `chrome.storage.local` restricted to trusted extension contexts.
 
 ## Threat model and limits
@@ -67,14 +67,10 @@ The protection of `pairing.json`, your scripts and env vars relies on your Windo
 - The Rust/C build cache is keyed on a 64-bit FNV-1a hash of the source. It is a cache key, not an integrity check: it does not detect a tampered cached executable in the data folder.
 - The old dashboard's execution settings (timeout, output limit, admin, working directory) did nothing and are removed, not implemented.
 
-## Release gate
+## Release verification
 
-Before 3.0.0 is published:
-
-1. Independent verification of the fixes above, and a final pass of `node --test tests/*.test.cjs`, `cargo test --manifest-path companion/Cargo.toml --locked` and `tests/security_browser.py`.
-2. Release binaries built from a clean tracked checkout, with checksums.
-3. Dependency notices re-checked against the final `Cargo.lock` and shipped with the binary.
+The release is built from tracked source, with dependency notices matched to Cargo.lock and SHA-256 checksums. See [verification evidence and limits](docs/VERIFICATION.md). Passing tests do not establish that all vulnerabilities are absent.
 
 ## Reporting a vulnerability
 
-There is no public issue tracker or security contact for this project yet. Until there is, report privately to the maintainer, Chris Mangin, and do not post exploit details publicly.
+Report vulnerabilities privately to the maintainer, Chris Mangin. Do not put tokens, private scripts or exploit details in public issues. A dedicated private reporting channel is not configured.

@@ -2,7 +2,7 @@ ScriptBridge companion: third-party dependency notices
 Generated from companion/Cargo.lock with:
   cargo metadata --locked --offline --format-version 1 --filter-platform x86_64-pc-windows-msvc --manifest-path companion/Cargo.toml
 License texts were copied from each crate's source in the local Cargo registry (files named LICENSE*, COPYING*, COPYRIGHT*, NOTICE*, UNLICENSE*, AUTHORS*, plus any package license-file). Nothing was fetched from the network.
-Package: script-bridge 3.0.0, MIT licensed (see the repository LICENSE file; Cargo.toml declares: no license field)
+Package: script-bridge 3.0.0, MIT licensed (see the repository LICENSE file; Cargo.toml declares: MIT)
 Not covered by Cargo.lock: the Rust standard library compiled into the executable. Its notices are in docs/RUST_STDLIB_NOTICES.html (verbatim copy of the toolchain COPYRIGHT-library.html). The Microsoft Visual C++ runtime that the MSVC target links against is not covered here.
 Lock file SHA-256: 23f9b55edce7d7c0b21519988e23b3e2340b9052b582388d771ddcd0bfebae10
 Scope: normal (non-dev, non-build) dependencies for target x86_64-pc-windows-msvc. Dev-dependencies and build-script-only dependencies are not shipped and are listed by name only at the end. Where a crate offers a choice of licenses (for example "MIT OR Apache-2.0"), all texts the crate ships are reproduced; no election is made here.

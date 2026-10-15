@@ -394,8 +394,12 @@ async fn create_script(State(state): State<AppState>, Json(input): Json<CreateSc
         order: 0,
     };
     let mut store = state.scripts.lock().unwrap();
-    store.insert(script.id.clone(), script.clone());
+    let is_new = store.insert(script.id.clone(), script.clone()).is_none();
     save_scripts(&state.data_dir, &store);
+    // A new id must not inherit orphan schedules; re-posting an existing id (sync) keeps them.
+    if is_new {
+        remove_schedules_for(&state, std::slice::from_ref(&script.id));
+    }
     Ok(Json(script))
 }
 
@@ -868,15 +872,13 @@ async fn import_scripts(
     let mut imported = 0;
     let mut skipped = 0;
 
-    let mut replaced = Vec::new();
+    let mut inserted = Vec::new();
     for mut script in input.scripts {
-        if store.contains_key(&script.id) {
-            if !input.overwrite {
-                skipped += 1;
-                continue;
-            }
-            replaced.push(script.id.clone());
+        if store.contains_key(&script.id) && !input.overwrite {
+            skipped += 1;
+            continue;
         }
+        inserted.push(script.id.clone());
         // Imported code must be reviewed and enabled explicitly before it can run.
         script.enabled = false;
         script.trigger = ScriptTrigger::Manual;
@@ -884,7 +886,7 @@ async fn import_scripts(
         imported += 1;
     }
     save_scripts(&state.data_dir, &store);
-    remove_schedules_for(&state, &replaced);
+    remove_schedules_for(&state, &inserted);
     Ok(Json(serde_json::json!({ "imported": imported, "skipped": skipped })))
 }
 

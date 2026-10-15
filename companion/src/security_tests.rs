@@ -985,3 +985,24 @@ async fn imports_arrive_disabled_manual_and_overwrites_drop_stale_schedules() {
     assert!(state.schedules.lock().unwrap().is_empty(), "replaced id loses its schedules");
     assert_eq!(send(&state, req(Method::POST, "/api/scripts/x/run").auth()).await.status, StatusCode::CONFLICT);
 }
+
+#[tokio::test]
+async fn new_ids_from_create_or_import_never_inherit_orphan_schedules() {
+    let tmp = TempDir::new();
+    let state = state_in(&tmp, Some(EXT_A));
+    let orphan = |id: &str| Schedule { id: format!("orphan-{id}"), script_id: id.into(), interval_secs: 5, enabled: true, last_run: None };
+    state.schedules.lock().unwrap().extend([orphan("new-a"), orphan("new-b")]);
+
+    let create = |id: &str| req(Method::POST, "/api/scripts").auth().json(serde_json::json!({
+        "id": id, "name": "n", "description": "", "language": "cmd", "category": "external", "code": "echo"
+    }));
+    assert_eq!(send(&state, create("new-a")).await.status, StatusCode::OK);
+    assert_eq!(send(&state, create("x")).await.status, StatusCode::OK, "sync re-post of an existing id");
+    let r = send(&state, req(Method::POST, "/api/import").auth().json(serde_json::json!({ "scripts": [fixture_script("new-b", true)] }))).await;
+    assert_eq!(serde_json::from_str::<serde_json::Value>(&r.body).unwrap(), serde_json::json!({ "imported": 1, "skipped": 0 }));
+
+    let remaining: Vec<String> = state.schedules.lock().unwrap().iter().map(|s| s.script_id.clone()).collect();
+    assert_eq!(remaining, vec!["x".to_string()], "only the existing id keeps its schedule");
+    let on_disk: Vec<Schedule> = serde_json::from_str(&std::fs::read_to_string(format!("{}/schedules.json", state.data_dir)).unwrap()).unwrap();
+    assert_eq!(on_disk.iter().map(|s| s.script_id.as_str()).collect::<Vec<_>>(), vec!["x"]);
+}

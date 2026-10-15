@@ -1,9 +1,4 @@
-# ScriptBridge 3.0.0 (DRAFT, unpublished)
-
-> [!IMPORTANT]
-> **Draft only. Not tagged or published.** The security fixes are implemented in source. Independent verification, the final test pass and the binary dependency notices against a release build are still pending. Do not attach binaries, tag or distribute until the [checklist](#pre-publish-checklist) is complete.
->
-> These notes do not claim that any asset below has been built, signed, tested or uploaded.
+# ScriptBridge 3.0.0
 
 **Version:** `3.0.0` for both the extension (`extension/manifest.json`) and the companion (`companion/Cargo.toml`).
 
@@ -14,12 +9,12 @@
 
 ## Security changes
 
-The two issues that held the earlier source are fixed in source, **pending independent verification**:
+The two issues that held the earlier source are addressed, with local regression and end-to-end verification:
 
 1. **Companion API authentication.** Every API request needs the per-install bearer token. `Host` is limited to `127.0.0.1:9876` / `localhost:9876`; any `Origin` must be the paired extension (or, for `/api/pair`, an extension). No wildcard CORS.
 2. **Page bridge removed.** Web pages have no path to extension privileges or native execution. `ScriptBridge.run`, the extension-backed `GM_xmlhttpRequest`, GM storage and notifications relays are gone by design.
 
-Details, including what is **not** protected: [SECURITY.md](../SECURITY.md).
+Details, including what is **not** protected: [SECURITY.md](https://github.com/ChrisMangin/script-bridge/blob/main/SECURITY.md).
 
 ## Upgrading from earlier source (incompatible)
 
@@ -44,24 +39,20 @@ Details, including what is **not** protected: [SECURITY.md](../SECURITY.md).
 - C needs `gcc` (for example MinGW-w64). MSVC is not supported.
 - The companion is Windows only. The extension needs Chromium 103 or later.
 
-## Planned assets (not built)
+## Release assets
 
 | Asset | Contents |
 |---|---|
 | `ScriptBridge.exe` | Release build of `companion/` from a clean tracked checkout (Windows x64) |
 | `ScriptBridge-v3.0.0-windows-x64.zip` | `ScriptBridge.exe`, the `extension/` folder (without `load-tests.js`), `LICENSE`, `README.md`, `SECURITY.md`, `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md` and `docs/` (release notes, `DEPENDENCY_NOTICES.txt`, `RUST_STDLIB_NOTICES.html`) |
 | `ScriptBridge-extension-v3.0.0.zip` | Contents of `extension/` without `load-tests.js`, for Load unpacked or store submission, with `LICENSE` and `THIRD_PARTY_NOTICES.md` (highlight.js BSD-3-Clause notice) |
+| `ScriptBridge-THIRD_PARTY_NOTICES.txt` | MIT, dependency and Rust standard-library notices for the standalone executable |
 | `SHA256SUMS.txt` | SHA-256 checksums of the assets above |
 
 The standalone `ScriptBridge.exe` asset sits next to the zip, whose notices cover it. `docs/DEPENDENCY_NOTICES.txt` and `docs/RUST_STDLIB_NOTICES.html` must match the `Cargo.lock` and toolchain used for the build.
 
 Do not reuse the stale local `dist/ScriptBridge.exe`. It is untracked, its origin is undocumented, and it predates the current source.
 
-## Pre-publish checklist
+## Verification
 
-- [ ] Independent verification of the companion auth and page-bridge removal
-- [ ] Final pass: `node --test tests/*.test.cjs`, `cargo test --manifest-path companion/Cargo.toml --locked`, `python tests/security_browser.py --browser <path>` (optionally `--companion <fresh binary>`, disposable setup only)
-- [ ] Clean source build from a tracked checkout; assets checksummed
-- [ ] `docs/DEPENDENCY_NOTICES.txt` regenerated or confirmed against the final `Cargo.lock` (lock SHA-256 is recorded in the file), and `docs/RUST_STDLIB_NOTICES.html` matching the build toolchain, both shipped with the binary
-- [ ] No user data, secrets, site addresses, `target/`, `dist/` or `load-tests.js` in the staged tree
-- [ ] Repository and release URLs added only once they exist
+See [verification evidence](https://github.com/ChrisMangin/script-bridge/blob/main/docs/VERIFICATION.md) for tested behavior and known limits. Binaries are unsigned Windows x64 builds. Source is MIT licensed. Review scripts before enabling them; native execution is not sandboxed.

@@ -45,6 +45,8 @@ chrome.storage.onChanged.addListener(async (changes, area) => {
     }
 });
 
+window.addEventListener('hashchange', loadPageFromHash);
+
 function loadPageFromHash() {
     const hash = location.hash.slice(1);
     if (hash === 'new') { showPage('scripts'); setTimeout(showCreateModal, 100); }

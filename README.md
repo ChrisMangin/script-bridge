@@ -2,7 +2,7 @@
   <h1>ScriptBridge</h1>
   <p><strong>Browser userscripts for Chromium, with an optional paired local companion for Python, Rust, C, CMD and PowerShell.</strong></p>
   <p>
-    <img src="https://img.shields.io/badge/release-3.0.0%20draft%20(unpublished)-orange" alt="3.0.0 draft, unpublished">
+    <img src="https://img.shields.io/badge/version-3.0.0-blue" alt="Version 3.0.0">
     <img src="https://img.shields.io/badge/platform-Windows-blue" alt="Windows">
     <img src="https://img.shields.io/badge/extension-Manifest%20V3-blue" alt="Manifest V3">
     <img src="https://img.shields.io/badge/companion-Rust-orange" alt="Rust">
@@ -11,7 +11,10 @@
 </div>
 
 > [!IMPORTANT]
-> **3.0.0 is an unpublished draft.** The security fixes it contains are implemented in source, but independent verification and the final test pass are still in progress, and the binary notices have not been finalized against a release build. Do not tag, publish or distribute a build yet. See [SECURITY.md](SECURITY.md) and [docs/release-notes.md](docs/release-notes.md).
+> **Version 3.0.0 changes the security boundary.** Pair the optional companion locally before running native scripts. Page-triggered native execution and privileged GM network/storage relays are removed. Native scripts still run with your Windows account's full permissions. Read [SECURITY.md](SECURITY.md) before use.
+
+**[GitHub repository](https://github.com/ChrisMangin/script-bridge)** | **[Release downloads](https://github.com/ChrisMangin/script-bridge/releases)**
+
 
 ScriptBridge is a Tampermonkey-style userscript manager. **The browser extension is the main app.** It stores your browser scripts and runs them on matching pages. The optional **companion** is a separate headless Windows program. Once paired with the extension, it runs *external* scripts on your machine: Python, Rust, C, CMD, PowerShell and Node.
 
@@ -24,7 +27,7 @@ ScriptBridge is a Tampermonkey-style userscript manager. **The browser extension
 - Syntax highlighting with bundled highlight.js 11.9.0 (core plus PowerShell and DOS grammars)
 - `.user.js` install interception: going to a `.user.js` URL opens the ScriptBridge install page, which shows the code before you install
 - `@updateURL` update checks every 6 hours. The dashboard lists updates; an update is applied only after you open its preview, review the diff and confirm, and the code you saw is the code that is saved. One-step revert to the previous version
-- Install and update URLs must be public `http(s)` without redirects: `localhost`, LAN and other private addresses are refused, so redirecting hosts (for example Greasy Fork) and local dev servers cannot be used by URL
+- Install and update URLs must be `http(s)` without redirects: `localhost` and literal private/reserved IP addresses are refused (DNS answers are not checked), so redirecting hosts (for example Greasy Fork) and local dev servers cannot be used by URL
 - Context menu to inject a browser script, or run an enabled external script when the companion is paired and online
 - GM compatibility layer (see [Compatibility limits](#compatibility-limits))
 
@@ -52,7 +55,7 @@ ScriptBridge is a Tampermonkey-style userscript manager. **The browser extension
 
 ## Quick Start
 
-No published release exists. For local evaluation only:
+Download the Windows bundle or extension ZIP from **Release downloads** above, then extract it. The companion is optional and the extension is installed with **Load unpacked**, not through a browser store.
 
 1. Open `chrome://extensions` (or `edge://extensions`) and turn on **Developer mode**
 2. Click **Load unpacked** and select the `extension/` folder
@@ -66,7 +69,7 @@ External scripts need the companion running **and paired**. Without it, the popu
 
 The companion and the extension share one secret, the **pairing token**. It is a 64-character hex value that the companion generates on first start and writes to `pairing.json` in its data folder (normally `%USERPROFILE%\.scriptbridge\pairing.json`). **No HTTP endpoint returns it.** You copy it yourself, locally.
 
-1. Build and start the companion (see [Building from Source](#building-from-source)). On first start it creates `pairing.json`.
+1. Start `ScriptBridge.exe` from the Windows bundle, or build the companion (see [Building from Source](#building-from-source)). On first start it creates `pairing.json`.
 2. Open `pairing.json` in a local editor and copy only the `token` value. Never paste it into a website, chat, script or export.
 3. In the extension dashboard, open **Companion**, paste the token into **Local pairing token** and click **Pair Companion**.
 
@@ -83,6 +86,8 @@ The extension keeps its copy in `chrome.storage.local`, restricted to extension 
 **Forget vs. revoke.** **Forget Local Token** removes only this browser's copy; the companion stays paired with that extension. To revoke the token or pair a different extension: stop the companion, delete `pairing.json`, start it again (a new token is generated) and pair again.
 
 **Schedules after a pairing reset.** When the companion starts without a `pairing.json` (the first start of 3.0.0, or after you deleted it), it pauses every existing schedule, and no schedule runs until an extension has paired. Review the paused schedules and re-create the ones you still want from the paired dashboard.
+
+Deleting a companion script removes its schedules. Companion imports arrive disabled with manual triggers; overwrite imports remove schedules for the replaced ids. Reset clears scripts, settings, schedules and history but preserves pairing. Chains validate all entries first and contain at most 20 scripts.
 
 ## Native scripts run with your permissions
 
@@ -158,7 +163,7 @@ script-bridge/
 │   └── security_browser.py   # Playwright checks of the real unpacked extension
 ├── .github/workflows/ci.yml
 ├── docs/
-│   ├── release-notes.md      # Draft 3.0.0 release notes (unpublished)
+│   ├── release-notes.md      # 3.0.0 release notes
 │   ├── DEPENDENCY_NOTICES.txt # Full license texts for the companion's Rust crates
 │   └── RUST_STDLIB_NOTICES.html # Rust standard library notices (toolchain copy)
 ├── CHANGELOG.md

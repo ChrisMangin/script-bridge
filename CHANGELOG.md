@@ -2,14 +2,14 @@
 
 All notable changes to ScriptBridge are documented here.
 
-No release has been published.
 
 
-## [3.0.0] — unreleased (draft)
 
-First planned public release, and a single version for both parts (previously extension `2.0.0`, companion `1.0.0`). Major version because the security changes below are **incompatible** with the earlier source.
+## [3.0.0] - 2026-10-14
 
-> **Status:** security fixes implemented in source; independent verification and the final test pass are in progress. Not published. See [SECURITY.md](SECURITY.md).
+First public release, and a single version for both parts (previously extension `2.0.0`, companion `1.0.0`). Major version because the security changes below are **incompatible** with the earlier source.
+
+> Local validation evidence and its limits are in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 ### Security
 - **Companion: mandatory token auth on every API route**, including `/api/pair`. `Host` must be `127.0.0.1:9876` or `localhost:9876`; any `Origin` must be a `chrome-extension://` origin, and the paired one outside `/api/pair`. Wildcard CORS removed
