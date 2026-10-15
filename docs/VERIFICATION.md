@@ -6,7 +6,7 @@ Local Windows x64 validation, 2026-10-14. These are regression checks, not a sec
 
 - **70 Rust tests passed**, including 28 security/router tests. Tests use disposable directories; they do not start the server or execute scripts.
 - **257 JavaScript tests passed** under native Node v24, including 228 extension-security tests, schema validation, URL rules, sender checks and parsing.
-- **41 real-browser checks passed** with the actual unpacked extension and optimized companion in a disposable profile/data directory. This includes pairing using Chromium's real extension Origin, rejected unauthenticated/hostile-Origin/rebound-Host requests, token-free exports, disabled native imports, inert hostile metadata, exact reviewed-code updates, page-bridge removal, a manual authenticated CMD echo with SSE output, and forgetting the browser token.
+- **42 real-browser checks passed** with the actual unpacked extension and optimized companion in a disposable profile/data directory. This includes pairing using Chromium's real extension Origin, rejected unauthenticated/hostile-Origin/rebound-Host requests, token-free exports, disabled native imports, inert hostile metadata, exact reviewed-code updates, page-bridge removal, a manual authenticated CMD echo with SSE output, and forgetting the browser token.
 - Browser-only mode separately passed 25 checks without starting the companion.
 - Optimized x64 Windows GUI-subsystem build passed with Rust/Cargo 1.97.1. Three pre-existing unused-import warnings remain.
 - A separate static review checked the auth guard, page boundary and native execution/schedule gates. It was an AI-assisted code review, not an external penetration test.

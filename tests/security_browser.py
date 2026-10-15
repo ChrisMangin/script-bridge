@@ -181,8 +181,10 @@ with tempfile.TemporaryDirectory(prefix='sb-security-', dir=tmp) as work:
             check('actual JSON import disables native script pending review', imported_state['enabled'] is False and imported_state['trigger'] == 'manual')
             with page.expect_file_chooser() as chooser:
                 page.locator('#btn-import').click()
-            chooser.value.set_files({'name': 'malformed.json', 'mimeType': 'application/json',
-                                     'buffer': json.dumps({'scripts': [invalid]}).encode()})
+            with page.expect_event('dialog', predicate=lambda dialog: dialog.type == 'alert') as rejection:
+                chooser.value.set_files({'name': 'malformed.json', 'mimeType': 'application/json',
+                                         'buffer': json.dumps({'scripts': [invalid]}).encode()})
+            check('invalid import reports validation error', 'invalid id' in rejection.value.message.lower())
             page.wait_for_function("() => document.querySelector('#script-list') !== null")
             check('invalid actual import not persisted', not page.evaluate("async bad => (await chrome.storage.local.get('scripts')).scripts.some(s => s.id === bad)", payload))
 
