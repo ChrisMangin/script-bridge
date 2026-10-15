@@ -1,0 +1,58 @@
+# Rust build output
+/companion/target/
+target/
+**/*.rs.bk
+*.pdb
+
+# Local build/packaging output (release assets are built, not committed)
+/dist/
+dist/
+release/
+*.exe
+*.zip
+*.crx
+*.pem
+
+# Local dev fixture (bulk test-script loader, not shipped)
+/extension/load-tests.js
+
+# Local verification/status notes (not published)
+/LOCAL_PREPARATION.md
+*.local.md
+local-status/
+verification/
+
+# Companion user data (normally %USERPROFILE%\.scriptbridge, never in repo)
+.scriptbridge/
+scripts.json
+settings.json
+history.json
+schedules.json
+
+# Secrets
+.env
+.env.*
+*.key
+*.pfx
+*.p12
+*.token
+
+# Node
+node_modules/
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temp
+*.tmp
+*.bak
+*.log
+pairing.json
+__pycache__/
+*.pyc

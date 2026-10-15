@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScriptBridge - Editor</title>
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<div id="app">
+    <header>
+        <div class="editor-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-6-6-6M12 19h8"/></svg>
+            <span id="script-title">&lt;New userscript&gt;</span>
+        </div>
+        <nav class="editor-nav">
+            <a id="nav-back">Installed Scripts</a>
+            <a id="nav-settings">Settings</a>
+        </nav>
+    </header>
+    <div class="editor-toolbar">
+        <div class="toolbar-tabs">
+            <span class="toolbar-tab active">Editor</span>
+        </div>
+        <div class="toolbar-menus">
+            <button class="menu-btn" id="btn-file">File</button>
+            <button class="menu-btn" id="btn-save">Save (Ctrl+S)</button>
+        </div>
+    </div>
+    <div class="editor-meta">
+        <div class="meta-row">
+            <label>Name</label><input type="text" id="meta-name" value="New Userscript">
+        </div>
+        <div class="meta-row">
+            <label>Category</label>
+            <select id="meta-category">
+                <option value="browser">Browser (injected)</option>
+                <option value="external">External (local)</option>
+            </select>
+            <label>Language</label>
+            <select id="meta-language">
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="rust">Rust</option>
+                <option value="c">C</option>
+                <option value="cmd">CMD</option>
+                <option value="powershell">PowerShell</option>
+            </select>
+        </div>
+        <div class="meta-row" id="meta-match-row">
+            <label>@match</label><input type="text" id="meta-match" value="https://*/*" placeholder="*://*/*">
+        </div>
+    </div>
+    <div class="editor-container">
+        <div class="line-numbers" id="line-numbers"></div>
+        <textarea id="code-editor" spellcheck="false" wrap="off"></textarea>
+    </div>
+    <input type="hidden" id="script-id">
+</div>
+<script src="editor.js"></script>
+</body>
+</html>

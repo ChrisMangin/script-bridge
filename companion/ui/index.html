@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScriptBridge</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 17l6-6-6-6M12 19h8"/>
+                </svg>
+                <h1>ScriptBridge</h1>
+            </div>
+            <div class="header-actions">
+                <a href="/guide.html" class="btn" style="text-decoration:none">Guide</a>
+                <a href="/settings.html" class="btn" style="text-decoration:none">Settings</a>
+                <button class="btn btn-primary" onclick="showCreateModal()">+ New Script</button>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="all" onclick="filterTab('all')">All Scripts</button>
+            <button class="tab" data-tab="browser" onclick="filterTab('browser')">Browser (JS)</button>
+            <button class="tab" data-tab="external" onclick="filterTab('external')">External</button>
+            <div style="margin-left:auto;display:flex;gap:8px;align-items:center;padding-right:8px">
+                <input type="text" id="search-input" placeholder="Search scripts... (Ctrl+F)" oninput="onSearchInput(event)" style="padding:6px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.82rem;width:200px">
+                <label style="font-size:0.72rem;color:var(--text-dim);display:flex;align-items:center;gap:4px"><input type="checkbox" id="search-regex"> Regex</label>
+                <button class="btn" onclick="importScripts()" title="Import scripts">Import</button>
+                <button class="btn" onclick="exportScripts()" title="Export all scripts">Export</button>
+            </div>
+        </div>
+
+        <main id="script-list"></main>
+
+        <!-- Create/Edit Modal -->
+        <div id="modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modal-title">New Script</h2>
+                    <button class="btn-close" onclick="closeModal()">&times;</button>
+                </div>
+                <form id="script-form" onsubmit="saveScript(event)">
+                    <input type="hidden" id="script-id">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" id="script-name" required placeholder="My Script">
+                        </div>
+                        <div class="form-group">
+                            <label>Language</label>
+                            <select id="script-language" onchange="onLanguageChange()">
+                                <option value="javascript">JavaScript</option>
+                                <option value="python">Python</option>
+                                <option value="rust">Rust</option>
+                                <option value="c">C</option>
+                                <option value="cmd">CMD</option>
+                                <option value="powershell">PowerShell</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="script-category" onchange="onCategoryChange()">
+                                <option value="browser">Browser (injected)</option>
+                                <option value="external">External (local)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" id="script-desc" placeholder="What does this script do?">
+                    </div>
+                    <div id="browser-options" class="form-group">
+                        <label>URL Match Patterns <span class="hint">(one per line, e.g. *://example.com/*)</span></label>
+                        <textarea id="script-patterns" rows="2" placeholder="*://*/*"></textarea>
+                        <label>Run At</label>
+                        <select id="script-runat">
+                            <option value="document-idle">document-idle</option>
+                            <option value="document-start">document-start</option>
+                            <option value="document-end">document-end</option>
+                        </select>
+                    </div>
+                    <div id="external-options" class="form-group hidden">
+                        <label>Trigger</label>
+                        <select id="script-trigger">
+                            <option value="manual">Manual</option>
+                            <option value="onbrowserevent">On Browser Event</option>
+                            <option value="schedule">Schedule</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Code</label>
+                        <textarea id="script-code" rows="16" class="code-editor" spellcheck="false" placeholder="// Your code here..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Run Output Modal -->
+        <div id="run-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Run Output</h2>
+                    <button class="btn-close" onclick="closeRunModal()">&times;</button>
+                </div>
+                <div id="run-output" class="run-output">
+                    <div id="run-status"></div>
+                    <pre id="run-stdout"></pre>
+                    <pre id="run-stderr" class="stderr"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

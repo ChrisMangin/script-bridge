@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScriptBridge - User Guide</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="settings.css">
+<style>
+.guide-layout { display: flex; min-height: calc(100vh - 70px); }
+.guide-nav { width: 220px; min-width: 220px; padding: 20px 0; border-right: 1px solid var(--border); position: sticky; top: 0; height: calc(100vh - 70px); overflow-y: auto; }
+.guide-nav a { display: block; padding: 8px 24px; color: var(--text-dim); text-decoration: none; font-size: 0.85rem; border-left: 3px solid transparent; transition: all 0.15s; }
+.guide-nav a:hover { color: var(--text); background: var(--surface); }
+.guide-nav a.active { color: var(--accent); border-left-color: var(--accent); background: var(--surface); }
+.guide-nav .nav-heading { padding: 16px 24px 6px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); opacity: 0.7; }
+.guide-content { flex: 1; padding: 32px 48px; max-width: 860px; line-height: 1.7; }
+.guide-content h2 { font-size: 1.4rem; margin: 40px 0 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); color: var(--text); }
+.guide-content h2:first-child { margin-top: 0; }
+.guide-content h3 { font-size: 1.1rem; margin: 28px 0 12px; color: var(--accent); }
+.guide-content p { margin: 10px 0; color: var(--text); opacity: 0.92; }
+.guide-content ul, .guide-content ol { margin: 10px 0 10px 24px; }
+.guide-content li { margin: 6px 0; color: var(--text); opacity: 0.9; }
+.guide-content code { background: var(--surface2); padding: 2px 6px; border-radius: 4px; font-family: var(--mono); font-size: 0.85em; color: var(--accent); }
+.guide-content pre { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; overflow-x: auto; margin: 14px 0; }
+.guide-content pre code { background: none; padding: 0; color: var(--text); font-size: 0.84rem; line-height: 1.6; }
+.guide-content .callout { background: var(--surface); border-left: 3px solid var(--accent); padding: 12px 16px; border-radius: 0 6px 6px 0; margin: 16px 0; }
+.guide-content .callout-warn { border-left-color: var(--orange); }
+.guide-content .callout-tip { border-left-color: var(--green); }
+.guide-content .callout p { margin: 4px 0; }
+.guide-content .callout strong { color: var(--accent); }
+.guide-content .callout-warn strong { color: var(--orange); }
+.guide-content .callout-tip strong { color: var(--green); }
+.guide-content table { width: 100%; border-collapse: collapse; margin: 14px 0; }
+.guide-content th, .guide-content td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; font-size: 0.85rem; }
+.guide-content th { background: var(--surface); color: var(--text-dim); font-weight: 500; }
+.guide-content td code { font-size: 0.8rem; }
+.guide-content .shortcut { display: inline-block; background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; font-family: var(--mono); font-size: 0.78rem; }
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+<div class="logo"><a href="/" style="display:flex;align-items:center;gap:12px;color:var(--accent);text-decoration:none"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-6-6-6M12 19h8"/></svg><h1>ScriptBridge</h1></a></div>
+<div class="header-actions"><a href="/" class="btn" style="text-decoration:none">Dashboard</a><a href="/settings.html" class="btn" style="text-decoration:none">Settings</a></div>
+</header>
+<div class="guide-layout">
+<nav class="guide-nav">
+<div class="nav-heading">Getting Started</div>
+<a href="#overview" class="active">Overview</a>
+<a href="#installation">Installation</a>
+<a href="#quick-start">Quick Start</a>
+<div class="nav-heading">Browser Scripts</div>
+<a href="#browser-creating">Creating Scripts</a>
+<a href="#browser-patterns">URL Patterns</a>
+<a href="#browser-runat">Run-at Timing</a>
+<a href="#browser-api">Userscript API</a>
+<div class="nav-heading">External Scripts</div>
+<a href="#ext-languages">Supported Languages</a>
+<a href="#ext-execution">Execution Model</a>
+<a href="#ext-triggers">Triggers</a>
+<a href="#ext-env">Environment</a>
+<div class="nav-heading">The Duo Pattern</div>
+<a href="#duo-concept">Concept</a>
+<a href="#duo-examples">Examples</a>
+<a href="#duo-messaging">Messaging</a>
+<div class="nav-heading">Reference</div>
+<a href="#api">REST API</a>
+<a href="#config-modes">Config Modes</a>
+<a href="#keyboard">Keyboard Shortcuts</a>
+<a href="#troubleshooting">Troubleshooting</a>
+</nav>
+<div class="guide-content">
+<div class="callout callout-warn" role="note"><p><strong>Release on hold:</strong> This legacy guide contains unverified examples and API names that do not match the current extension. Use the repository README and SECURITY.md as the current reference. The companion API is unauthenticated; the security settings do not enforce authentication. Do not run this build alongside untrusted web pages or use these examples on production equipment.</p></div>
+
+<h2 id="overview">Overview</h2>
+<p>ScriptBridge is a Tampermonkey-style userscript manager with a unique twist: alongside traditional browser JavaScript injection, it can execute <strong>external scripts</strong> (Python, Rust, C, CMD, PowerShell) on your local machine. The browser extension and local companion server work as a duo.</p>
+
+<div class="callout">
+<p><strong>Two components:</strong></p>
+<p>1. <strong>Companion Server</strong> (ScriptBridge.exe) &mdash; manages scripts, runs external code, serves this dashboard</p>
+<p>2. <strong>Browser Extension</strong> (Chrome MV3) &mdash; injects JS into pages, provides popup, talks to companion</p>
+</div>
+
+<h2 id="installation">Installation</h2>
+<h3>Step 1: Start the Companion Server</h3>
+<p>Double-click <code>ScriptBridge.exe</code>. The dashboard does not open automatically. For isolated development only, open <code>http://localhost:9876</code> manually. The server runs in the background with no console window.</p>
+<div class="callout callout-warn"><p><strong>Startup:</strong> Do not enable automatic startup while the release security issues remain open.</p></div>
+
+<h3>Step 2: Install the Browser Extension</h3>
+<ol>
+<li>Open Chrome and navigate to <code>chrome://extensions</code></li>
+<li>Enable <strong>Developer mode</strong> (toggle in top-right corner)</li>
+<li>Click <strong>Load unpacked</strong></li>
+<li>Select the <code>extension/</code> folder from the ScriptBridge directory</li>
+<li>Pin the ScriptBridge icon in your toolbar</li>
+</ol>
+
+<h3>Step 3: Verify Connection</h3>
+<p>Click the extension icon. The status dot should be <span style="color:var(--green)">green</span>, indicating the companion is reachable.</p>
+
+<h2 id="quick-start">Quick Start</h2>
+<h3>Your First Browser Script</h3>
+<ol>
+<li>Click <strong>+ New Script</strong> on the dashboard</li>
+<li>Set Language to <strong>JavaScript</strong> and Category to <strong>Browser (injected)</strong></li>
+<li>Enter a URL pattern like <code>*://example.com/*</code></li>
+<li>Write your code:
+<pre><code>// Adds a banner to example.com
+const banner = document.createElement('div');
+banner.textContent = 'ScriptBridge is working!';
+banner.style.cssText = 'position:fixed;top:0;left:0;right:0;padding:8px;background:#6c8cff;color:#fff;text-align:center;z-index:99999;font-size:14px;';
+document.body.appendChild(banner);</code></pre>
+</li>
+<li>Click <strong>Save</strong>, then visit example.com</li>
+</ol>
+
+<h3>Your First External Script</h3>
+<ol>
+<li>Click <strong>+ New Script</strong></li>
+<li>Set Language to <strong>Python</strong> and Category to <strong>External (local)</strong></li>
+<li>Write your code:
+<pre><code>import os
+import datetime
+
+print(f"Hello from ScriptBridge!")
+print(f"User: {os.getenv('USERNAME')}")
+print(f"Time: {datetime.datetime.now()}")
+print(f"CWD:  {os.getcwd()}")</code></pre>
+</li>
+<li>Click <strong>Save</strong>, then click the <strong>Run</strong> button on the script card</li>
+<li>See stdout/stderr output in the Run Output modal</li>
+</ol>
+
+<h2 id="browser-creating">Creating Browser Scripts</h2>
+<p>Browser scripts are JavaScript that gets injected into web pages matching your URL patterns. They work just like Tampermonkey userscripts.</p>
+
+<h3>Script Structure</h3>
+<pre><code>// Basic structure (no metadata block needed, patterns are set in the UI)
+'use strict';
+
+// DOM manipulation
+document.querySelector('.annoying-popup')?.remove();
+
+// Page modification
+const style = document.createElement('style');
+style.textContent = '.ads { display: none !important; }';
+document.head.appendChild(style);
+
+// Event listeners
+window.addEventListener('load', () => {
+    console.log('Page fully loaded, ScriptBridge active');
+});</code></pre>
+
+<h3>Execution Context</h3>
+<p>By default, scripts run in the <strong>MAIN world</strong>, meaning they have full access to the page's JavaScript context (variables, functions, etc). This is equivalent to Tampermonkey's <code>@grant none</code> mode.</p>
+<div class="callout callout-warn"><p><strong>Security note:</strong> MAIN world scripts can be detected by the page. Use ISOLATED world (Settings > Security > Sandbox Mode) if you need stealth.</p></div>
+
+<h2 id="browser-patterns">URL Match Patterns</h2>
+<p>Patterns determine which pages your script runs on. Supports glob syntax:</p>
+<table>
+<tr><th>Pattern</th><th>Matches</th></tr>
+<tr><td><code>*://*.google.com/*</code></td><td>All Google pages (http and https)</td></tr>
+<tr><td><code>https://github.com/*</code></td><td>GitHub (https only)</td></tr>
+<tr><td><code>*://*/settings*</code></td><td>Any settings page on any domain</td></tr>
+<tr><td><code>*://*/*</code></td><td>All pages (use sparingly)</td></tr>
+</table>
+<div class="callout callout-tip"><p><strong>Tip:</strong> You can add multiple patterns (one per line) to match several sites with one script.</p></div>
+
+<h2 id="browser-runat">Run-at Timing</h2>
+<table>
+<tr><th>Value</th><th>When</th><th>Use Case</th></tr>
+<tr><td><code>document-start</code></td><td>Before DOM is parsed</td><td>Block requests, override globals early</td></tr>
+<tr><td><code>document-end</code></td><td>DOM ready, before images/subresources</td><td>Modify page structure before render</td></tr>
+<tr><td><code>document-idle</code></td><td>Page fully loaded (default)</td><td>Most scripts; safest option</td></tr>
+</table>
+
+<h2 id="browser-api">Userscript API</h2>
+<p>ScriptBridge provides utility functions available in browser scripts:</p>
+<pre><code>// Storage (persists across page loads)
+await ScriptBridge.storage.get('myKey');
+await ScriptBridge.storage.set('myKey', {count: 42});
+
+// Trigger an external script from the browser
+await ScriptBridge.runExternal('script-id-here');
+
+// Notify the user
+ScriptBridge.notify('Download complete!', {duration: 3000});
+
+// Cross-origin fetch (bypasses CORS)
+const data = await ScriptBridge.fetch('https://api.example.com/data');
+
+// Get info about the current script
+console.log(ScriptBridge.info.name, ScriptBridge.info.version);</code></pre>
+
+<h2 id="ext-languages">Supported Languages</h2>
+<table>
+<tr><th>Language</th><th>Compiler/Runtime</th><th>File Extension</th><th>Notes</th></tr>
+<tr><td>Python</td><td><code>python</code></td><td>.py</td><td>Uses system Python from PATH (or custom path in settings)</td></tr>
+<tr><td>Rust</td><td><code>rustc</code></td><td>.rs</td><td>Compiled then executed; artifacts cached if "Keep Build Artifacts" is on</td></tr>
+<tr><td>C</td><td><code>gcc</code></td><td>.c</td><td>Compiled with gcc (MinGW); use cl for MSVC in settings</td></tr>
+<tr><td>CMD</td><td><code>cmd.exe /c</code></td><td>.cmd</td><td>Windows batch scripting</td></tr>
+<tr><td>PowerShell</td><td><code>powershell.exe -File</code></td><td>.ps1</td><td>Execution policy set in Settings > External</td></tr>
+<tr><td>JavaScript</td><td><code>node</code></td><td>.js</td><td>Node.js for server-side JS (separate from browser injection)</td></tr>
+</table>
+
+<h2 id="ext-execution">Execution Model</h2>
+<p>When you run an external script, the companion:</p>
+<ol>
+<li>Writes your code to a temp file in the scripts directory</li>
+<li>For compiled languages (Rust, C): compiles first, aborts if compilation fails</li>
+<li>Executes the script/binary as a child process</li>
+<li>Captures stdout, stderr, exit code, and timing</li>
+<li>Returns the result to the dashboard/extension</li>
+</ol>
+
+<div class="callout">
+<p><strong>Timeout:</strong> Scripts are killed after the configured timeout (default: 30s). Set to 0 for no limit. Configure in Settings > External Scripts > Execution Timeout.</p>
+</div>
+
+<h3>Compilation Errors</h3>
+<p>For Rust and C scripts, if compilation fails, you'll see the compiler output (errors, warnings) in the stderr panel. The script won't execute.</p>
+
+<h2 id="ext-triggers">Triggers</h2>
+<table>
+<tr><th>Trigger</th><th>How it Works</th></tr>
+<tr><td><strong>Manual</strong></td><td>Click the Run button on the dashboard or extension popup</td></tr>
+<tr><td><strong>On Browser Event</strong></td><td>A browser script calls <code>ScriptBridge.runExternal(id)</code></td></tr>
+<tr><td><strong>Schedule</strong></td><td>Runs at fixed intervals (coming soon)</td></tr>
+</table>
+
+<h2 id="ext-env">Environment</h2>
+<p>External scripts run with:</p>
+<ul>
+<li>Working directory: scripts storage dir (configurable)</li>
+<li>Inherited system PATH and environment</li>
+<li>Additional env vars from Settings > External Scripts > Environment Variables</li>
+<li>No interactive input (stdin is closed)</li>
+</ul>
+
+<h2 id="duo-concept">The Duo Pattern</h2>
+<p>The core innovation of ScriptBridge: <strong>browser scripts observe, local scripts act</strong>.</p>
+<p>A browser script detects something on a page (a download link, a status change, data) and triggers a local script to do something your browser can't: move files, run CLI tools, interact with hardware, call local APIs, automate desktop apps.</p>
+
+<h3>Flow</h3>
+<pre><code>Browser (JS userscript)           Extension           Companion (local)
+        |                              |                      |
+   Detects event  ──────────────►  Receives msg  ──────►  Runs script
+        |                              |                      |
+        |                              |                 Python/Rust/PS1
+        |                              |                      |
+        ◄───────────────────────  Returns result  ◄─────  stdout/exit
+        |                              |                      |
+   Updates page                        |                      |</code></pre>
+
+<h2 id="duo-examples">Duo Examples</h2>
+
+<h3>Example 1: Auto-download and organize files</h3>
+<pre><code>// BROWSER SCRIPT (JavaScript) - runs on a file hosting site
+// Detects download links and sends them to a local organizer
+
+document.querySelectorAll('a.download-link').forEach(link => {
+    link.addEventListener('click', async (e) => {
+        const filename = link.textContent;
+        const url = link.href;
+        // Tell companion to organize after download
+        await ScriptBridge.runExternal('file-organizer', {
+            filename, url, category: 'documents'
+        });
+    });
+});</code></pre>
+<pre><code># EXTERNAL SCRIPT (Python) - file-organizer
+# Moves downloaded files to categorized folders
+import os, sys, json, shutil, time
+from pathlib import Path
+
+downloads = Path.home() / 'Downloads'
+categories = {
+    'documents': ['pdf', 'docx', 'xlsx', 'pptx', 'txt'],
+    'images': ['jpg', 'png', 'gif', 'webp', 'svg'],
+    'code': ['py', 'rs', 'js', 'c', 'cpp', 'h'],
+}
+
+# Wait for download to appear
+time.sleep(5)
+for f in sorted(downloads.iterdir(), key=os.path.getmtime, reverse=True)[:5]:
+    ext = f.suffix.lstrip('.').lower()
+    for cat, exts in categories.items():
+        if ext in exts:
+            dest = downloads / cat
+            dest.mkdir(exist_ok=True)
+            shutil.move(str(f), str(dest / f.name))
+            print(f'Moved {f.name} -> {cat}/')
+            break</code></pre>
+
+<h3>Example 2: PLC data logger</h3>
+<pre><code>// BROWSER SCRIPT - runs on your SCADA/HMI web interface
+// When alarm fires, trigger local data capture
+
+const observer = new MutationObserver(mutations => {
+    for (const m of mutations) {
+        if (m.target.classList.contains('alarm-active')) {
+            ScriptBridge.runExternal('plc-snapshot');
+        }
+    }
+});
+observer.observe(document.querySelector('.alarm-panel'), {
+    attributes: true, subtree: true
+});</code></pre>
+<pre><code># EXTERNAL SCRIPT (Python) - plc-snapshot
+# Captures PLC tag data on alarm event
+from pylogix import PLC
+from datetime import datetime
+import json
+
+# Documentation-only addresses. Never run against plant equipment without authorization.
+plcs = {
+    'Controller-A': '192.0.2.10',
+    'Controller-B': '192.0.2.11',
+}
+
+snapshot = {'timestamp': datetime.now().isoformat(), 'tags': {}}
+for name, ip in plcs.items():
+    with PLC(ip) as plc:
+        result = plc.Read(['Program:MainProgram.AlarmCode',
+                          'Program:MainProgram.ConveyorSpeed'])
+        snapshot['tags'][name] = {t.TagName: t.Value for t in result}
+
+outfile = f'snapshots/alarm_{datetime.now():%Y%m%d_%H%M%S}.json'
+with open(outfile, 'w') as f:
+    json.dump(snapshot, f, indent=2)
+print(f'Snapshot saved: {outfile}')</code></pre>
+
+<h3>Example 3: Clipboard bridge</h3>
+<pre><code>// BROWSER SCRIPT - copies selected text to a local file via PowerShell
+document.addEventListener('keydown', async (e) => {
+    if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+        const text = window.getSelection().toString();
+        if (text) {
+            await ScriptBridge.runExternal('save-selection', {text, url: location.href});
+        }
+    }
+});</code></pre>
+<pre><code># EXTERNAL SCRIPT (PowerShell) - save-selection
+# Appends selected text to a notes file with source URL
+param()
+ = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+ = ":USERPROFILE\Documents\web-clippings.md"
+
+Add-Content  ""
+Add-Content  "## Clipping - "
+Add-Content  "Source: :SB_URL"
+Add-Content  ""
+Add-Content  :SB_TEXT
+Add-Content  "---"
+Write-Host "Saved to "</code></pre>
+
+<h2 id="duo-messaging">Messaging Between Scripts</h2>
+<p>Browser scripts communicate with external scripts through the extension and companion API:</p>
+<pre><code>// From browser script:
+const result = await ScriptBridge.runExternal('my-script-id', {
+    // Optional data passed as environment variables (SB_* prefix)
+    key: 'value',
+    another: 'data'
+});
+console.log(result.stdout);  // What the external script printed
+console.log(result.exitCode); // 0 = success</code></pre>
+<p>Data passed to external scripts appears as environment variables with the <code>SB_</code> prefix:</p>
+<pre><code># In Python:
+import os
+key = os.environ.get('SB_KEY')      # 'value'
+another = os.environ.get('SB_ANOTHER')  # 'data'
+
+# In PowerShell:
+ = :SB_KEY
+ = :SB_ANOTHER
+
+# In CMD:
+echo %SB_KEY%</code></pre>
+
+<h2 id="api">REST API Reference</h2>
+<p>All endpoints at <code>http://localhost:9876</code>:</p>
+<table>
+<tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+<tr><td><code>GET</code></td><td><code>/api/ping</code></td><td>Health check (returns "pong")</td></tr>
+<tr><td><code>GET</code></td><td><code>/api/scripts</code></td><td>List all scripts (sorted by last updated)</td></tr>
+<tr><td><code>POST</code></td><td><code>/api/scripts</code></td><td>Create a new script</td></tr>
+<tr><td><code>GET</code></td><td><code>/api/scripts/:id</code></td><td>Get a single script by ID</td></tr>
+<tr><td><code>PUT</code></td><td><code>/api/scripts/:id</code></td><td>Update a script</td></tr>
+<tr><td><code>DELETE</code></td><td><code>/api/scripts/:id</code></td><td>Delete a script</td></tr>
+<tr><td><code>POST</code></td><td><code>/api/scripts/:id/run</code></td><td>Execute an external script</td></tr>
+<tr><td><code>POST</code></td><td><code>/api/scripts/:id/toggle</code></td><td>Toggle enabled/disabled</td></tr>
+<tr><td><code>GET</code></td><td><code>/api/browser-scripts</code></td><td>Get enabled browser scripts (extension use)</td></tr>
+<tr><td><code>GET</code></td><td><code>/api/settings</code></td><td>Get all settings</td></tr>
+<tr><td><code>PUT</code></td><td><code>/api/settings</code></td><td>Save settings</td></tr>
+<tr><td><code>DELETE</code></td><td><code>/api/settings</code></td><td>Reset settings to defaults</td></tr>
+</table>
+
+<h3>Example: Create a script via API</h3>
+<pre><code>curl -X POST http://localhost:9876/api/scripts   -H "Content-Type: application/json"   -d '{
+    "name": "Hello World",
+    "description": "Test script",
+    "language": "python",
+    "category": "external",
+    "code": "print('Hello from ScriptBridge!')",
+    "trigger": "manual"
+  }'</code></pre>
+
+<h2 id="config-modes">Config Modes</h2>
+<table>
+<tr><th>Mode</th><th>For</th><th>Visible Settings</th></tr>
+<tr><td><strong>Beginner</strong></td><td>New users</td><td>~20 essential settings: language, theme, timeout, patterns</td></tr>
+<tr><td><strong>Advanced</strong></td><td>Power users (default)</td><td>Most settings: editor config, security, sync, compiler paths</td></tr>
+<tr><td><strong>Expert</strong></td><td>Full control</td><td>Everything visible, including experimental and dangerous options</td></tr>
+</table>
+
+<h2 id="keyboard">Keyboard Shortcuts</h2>
+<table>
+<tr><th>Shortcut</th><th>Where</th><th>Action</th></tr>
+<tr><td><span class="shortcut">Ctrl+S</span></td><td>Editor</td><td>Save script</td></tr>
+<tr><td><span class="shortcut">Ctrl+Enter</span></td><td>Editor</td><td>Save and run (external scripts)</td></tr>
+<tr><td><span class="shortcut">Tab</span></td><td>Editor</td><td>Insert indentation</td></tr>
+<tr><td><span class="shortcut">Ctrl+/</span></td><td>Editor</td><td>Toggle comment</td></tr>
+<tr><td><span class="shortcut">Escape</span></td><td>Modal</td><td>Close modal/dialog</td></tr>
+<tr><td><span class="shortcut">Ctrl+N</span></td><td>Dashboard</td><td>New script</td></tr>
+</table>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+
+<h3>Companion won't start</h3>
+<ul>
+<li>Check if port 9876 is in use: <code>netstat -ano | findstr 9876</code></li>
+<li>Another instance may be running. Kill it or change the port in settings.</li>
+<li>Windows Firewall may be blocking it. Allow "ScriptBridge" through.</li>
+</ul>
+
+<h3>Extension shows "Companion offline"</h3>
+<ul>
+<li>Make sure ScriptBridge.exe is running</li>
+<li>Click "Sync Scripts" in the extension popup</li>
+<li>Check that Settings > Security > Allowed Origins includes <code>chrome-extension://*</code></li>
+</ul>
+
+<h3>Browser scripts not injecting</h3>
+<ul>
+<li>Verify the script is <strong>enabled</strong> (green toggle)</li>
+<li>Check URL patterns match the target page</li>
+<li>Open DevTools console for injection errors</li>
+<li>Some sites have strict CSP; try Settings > Security > CSP Modification: Always</li>
+<li>Reload the page after creating/editing a script</li>
+</ul>
+
+<h3>External script fails to compile (Rust/C)</h3>
+<ul>
+<li>Ensure <code>rustc</code> / <code>gcc</code> is on your PATH</li>
+<li>Check the stderr output for compiler errors</li>
+<li>Set custom paths in Settings > External Scripts</li>
+</ul>
+
+<h3>Python script can't find modules</h3>
+<ul>
+<li>ScriptBridge uses your system Python. Install packages with <code>pip install</code></li>
+<li>Set a specific Python path in Settings > External Scripts > Python Path (e.g. a venv)</li>
+</ul>
+
+<h3>Permission denied errors</h3>
+<ul>
+<li>External scripts run as your user by default</li>
+<li>Enable "Run as Admin" in Settings > External Scripts for elevated scripts (triggers UAC)</li>
+<li>Script storage directory must be writable</li>
+</ul>
+
+<div class="callout callout-tip">
+<p><strong>Need more help?</strong> Check the companion server logs (set Logging Level to Debug in Settings > General) or open browser DevTools to see extension messages.</p>
+</div>
+
+</div>
+</div>
+</div>
+</body>
+</html>

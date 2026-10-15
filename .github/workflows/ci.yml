@@ -1,0 +1,22 @@
+name: Windows checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Extension unit tests and syntax checks
+        run: node --test tests/*.test.cjs
+      - name: Companion unit tests (no server startup)
+        run: cargo test --locked --manifest-path companion/Cargo.toml
+      - name: Compile companion (do not run or publish)
+        run: cargo build --release --locked --manifest-path companion/Cargo.toml
