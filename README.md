@@ -90,6 +90,12 @@ Download the Windows bundle or extension ZIP from **Release downloads** above, t
 
 External scripts need the companion running **and paired**. Without it, the popup shows the companion as offline or unpaired and browser scripts still work normally.
 
+## Troubleshooting script updates
+
+If an old installation keeps reopening an update preview, reload **ScriptBridge** once from `chrome://extensions` (or `edge://extensions`). Reload the existing unpacked extension, do not remove it: this keeps its id and stored scripts. Editing its files or restarting the browser can leave the old service worker cached. Current update checks list updates in the dashboard without opening tabs.
+
+A failed install/update download does not mean the optional companion is offline. The error page shows the requested source and offers **Retry**, **Open Dashboard**, and **Close**, with no automatic retry. Downloads deliberately omit sign-in cookies and reject redirects, so protected sources may need a manual download through their normal signed-in website, followed by code review in the ScriptBridge editor. Retrying does not sign in. HTML/sign-in responses are rejected rather than offered as script code; failed downloads leave installed scripts unchanged.
+
 ## Pairing the companion
 
 The companion and the extension share one secret, the **pairing token**. It is a 64-character hex value that the companion generates on first start and writes to `pairing.json` in its data folder (normally `%USERPROFILE%\.scriptbridge\pairing.json`). **No HTTP endpoint returns it.** You copy it yourself, locally.

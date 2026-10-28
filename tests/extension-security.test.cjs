@@ -481,6 +481,17 @@ test('update check records available updates without opening any tab', async () 
     assert.doesNotMatch(read('background.js').match(/async function checkForUpdates[\s\S]*?\n}/)[0], /openUpdateTab|tabs\.create/);
 });
 
+test('repeated update checks after closing a preview never reopen it', async () => {
+    const w = createWorker({ fetchImpl: async () => ({ ok: true, status: 200, text: async () => '// @version 2.0' }) });
+    w.store.scripts = [validScript({ code: '// @version 1.0\n// @updateURL https://example.org/a.user.js' })];
+    await w.context.checkForUpdates();
+    await w.send({ action: 'openUpdateTab', id: 'script-1' }, trustedSender('dashboard.html'));
+    w.calls.tabsCreated.length = 0; // The user has closed the explicitly opened preview.
+    for (let i = 0; i < 3; i++) await w.context.checkForUpdates();
+    assert.equal(w.calls.tabsCreated.length, 0);
+    assert.deepEqual(Object.keys(w.store.scriptUpdates), ['script-1']);
+});
+
 test('openUpdateTab still opens the preview page when the user asks', async () => {
     const w = createWorker();
     assert.deepEqual(await w.send({ action: 'openUpdateTab', id: 'script-1' }, trustedSender('dashboard.html')), { ok: true });

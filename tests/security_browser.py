@@ -61,6 +61,7 @@ with tempfile.TemporaryDirectory(prefix='sb-security-', dir=tmp) as work:
             payload = '\"><img src=x onerror="window.__pwn=1">'
 
             update_fetches = []
+            retry_fetches = []
             reviewed_update = '// ==UserScript==\n// @name Update fixture\n// @version 2.0\n// ==/UserScript==\nconsole.log("REVIEWED_NOT_EXECUTED");'
 
             def route_request(route):
@@ -76,6 +77,25 @@ with tempfile.TemporaryDirectory(prefix='sb-security-', dir=tmp) as work:
                         update_fetches.append(route.request.url)
                         source = reviewed_update if len(update_fetches) == 1 else 'throw new Error("UNREVIEWED");'
                         route.fulfill(status=200, content_type='text/javascript', body=source)
+                    elif url.path == '/offline.user.js':
+                        route.abort()
+                    elif url.path == '/forbidden.user.js':
+                        route.fulfill(status=403, content_type='text/plain', body='Forbidden')
+                    elif url.path == '/redirect.user.js':
+                        route.fulfill(status=302, headers={'Location': fixture + 'login'})
+                    elif url.path == '/login.user.js':
+                        route.fulfill(status=200, content_type='text/html', body='<html><body>Sign in</body></html>')
+                    elif url.path == '/html-as-text.user.js':
+                        route.fulfill(status=200, content_type='text/plain', body='<!DOCTYPE html><html>Sign in</html>')
+                    elif url.path == '/retry.user.js':
+                        retry_fetches.append(route.request.url)
+                        if len(retry_fetches) == 1:
+                            route.abort()
+                        else:
+                            route.fulfill(status=200, content_type='text/javascript', body=reviewed_update)
+                    elif url.path == '/metadata.js':
+                        route.fulfill(status=200, content_type='text/javascript',
+                                      body='// @version 2.0\n// @downloadURL ' + fixture + 'offline.user.js')
                     elif url.path == '/fixture.user.js':
                         source = ('// ==UserScript==\n// @name ' + payload +
                                   '\n// @homepage javascript:alert(1)\n// @match http://scriptbridge.test/*'
@@ -206,6 +226,62 @@ with tempfile.TemporaryDirectory(prefix='sb-security-', dir=tmp) as work:
             check('update installs exactly reviewed bytes without refetch',
                   page.evaluate("async () => (await chrome.storage.local.get('scripts')).scripts[0].code") == reviewed_update and len(update_fetches) == 1)
             check('update preserves disabled state', page.evaluate("async () => (await chrome.storage.local.get('scripts')).scripts[0].enabled") is False)
+
+            # Reproduce a discovered update whose source cannot be downloaded.
+            failing_script = dict(update_script, code='// @version 1.0\n// @updateURL ' + fixture + 'metadata.js')
+            page.evaluate("s => chrome.runtime.sendMessage({action:'saveScripts',scripts:[s]})", failing_script)
+            opened_unexpectedly = []
+            record_page = lambda new_page: opened_unexpectedly.append(new_page.url)
+            context.on('page', record_page)
+            updates = page.evaluate("() => chrome.runtime.sendMessage({action:'checkForUpdates'})")
+            check('real update check records a newer version without opening a tab',
+                  'update-fixture' in updates and not opened_unexpectedly)
+            context.remove_listener('page', record_page)
+            snapshot = page.evaluate("() => chrome.storage.local.get('scripts')")
+            for source, message in [('offline.user.js', 'Failed to fetch'),
+                                    ('forbidden.user.js', 'HTTP 403'),
+                                    ('redirect.user.js', 'Failed to fetch'),
+                                    ('login.user.js', 'web page instead of script code'),
+                                    ('html-as-text.user.js', 'web page instead of script code')]:
+                page.evaluate("url => chrome.storage.local.set({scriptUpdates:{'update-fixture':{downloadUrl:url}}})", fixture + source)
+                failed = context.new_page()
+                failed.on('pageerror', lambda error: errors.append(str(error)))
+                failed.goto(base + '/install.html?update=update-fixture')
+                expect(failed.locator('#load-error-detail')).to_contain_text(message)
+                expect(failed.locator('#install-content')).to_contain_text('do not send sign-in cookies or follow redirects')
+                expect(failed.locator('#failed-source')).to_have_text(fixture + source)
+                check('failed update has no install action: ' + source, failed.locator('#btn-do-install').count() == 0)
+                with failed.expect_event('close'):
+                    failed.locator('#btn-close-load').click()
+                opened_unexpectedly.clear()
+                context.on('page', record_page)
+                for _ in range(2):
+                    result = page.evaluate("() => chrome.runtime.sendMessage({action:'checkForUpdates'})")
+                    check('closed failure stays closed during update check: ' + source,
+                          'update-fixture' in result and not opened_unexpectedly)
+                context.remove_listener('page', record_page)
+                check('failed update leaves installed script unchanged: ' + source,
+                      snapshot == page.evaluate("() => chrome.storage.local.get('scripts')"))
+
+            retry = context.new_page()
+            retry.goto(base + '/install.html?url=' + fixture + 'retry.user.js')
+            expect(retry.locator('#btn-retry-load')).to_be_visible()
+            check('failed install fetches only once before Retry', len(retry_fetches) == 1)
+            retry.locator('#btn-retry-load').click()
+            expect(retry.locator('#btn-do-install')).to_be_visible()
+            check('explicit Retry loads code for review without saving it', len(retry_fetches) == 2 and
+                  snapshot == page.evaluate("() => chrome.storage.local.get('scripts')"))
+            retry.close()
+
+            unsafe = context.new_page()
+            unsafe_source = 'javascript:<img src=x onerror=alert(1)>'
+            unsafe.goto(base + '/install.html?url=' + unsafe_source)
+            expect(unsafe.locator('#load-error-detail')).to_contain_text('http(s) without credentials')
+            check('error page escapes untrusted source', unsafe.locator('img,[onerror]').count() == 0)
+            unsafe.locator('#btn-open-dashboard').click()
+            expect(unsafe.locator('#script-list')).to_be_visible()
+            check('error recovery opens dashboard in the same tab', unsafe.url == base + '/dashboard.html')
+            unsafe.close()
 
             if args.companion:
                 check('only our companion running' , process.poll() is None)

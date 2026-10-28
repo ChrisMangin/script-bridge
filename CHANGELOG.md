@@ -5,6 +5,13 @@ All notable changes to ScriptBridge are documented here.
 
 
 
+## Unreleased
+
+- Installer download errors explain credential/redirect limits, show the requested source, and offer explicit Retry, Open Dashboard and Close actions without automatic retries.
+- Installer refuses HTML/sign-in responses instead of offering them as script code.
+- Regression tests cover failed updates, unchanged installed scripts, explicit retries and repeated checks after closing a preview.
+- Document reloading a legacy unpacked extension to replace its cached automatic-update-tab worker.
+
 ## [3.0.0] - 2026-10-14
 
 First public release, and a single version for both parts (previously extension `2.0.0`, companion `1.0.0`). Major version because the security changes below are **incompatible** with the earlier source.

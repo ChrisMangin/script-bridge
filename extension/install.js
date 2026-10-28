@@ -5,6 +5,7 @@
     const scriptUrl = params.get('url');
     const updateId = params.get('update'); // if present, this is an update
     const revertId = params.get('revert'); // if present, this is a revert
+    let downloadUrl = scriptUrl;
     const send = async (msg) => { const response = await chrome.runtime.sendMessage(msg); if (response && !Array.isArray(response) && response.error) throw new Error(response.error); return response; };
 
     if (!scriptUrl && !updateId && !revertId) {
@@ -65,6 +66,41 @@
 
     function safeDownloadUrl(value) {
         return SBScriptUrlPolicy.fetchableScriptUrl(value);
+    }
+
+    async function readScriptResponse(response) {
+        if (!response.ok) throw new Error(`Download failed (HTTP ${response.status})`);
+        const text = await response.text();
+        const type = response.headers.get('content-type') || '';
+        if (/\b(?:text\/html|application\/xhtml\+xml)\b/i.test(type) || /^\s*(?:<!doctype\s+html|<html\b)/i.test(text)) {
+            throw new Error('The server returned a web page instead of script code, possibly a sign-in page');
+        }
+        return text;
+    }
+
+    function showLoadError(error) {
+        const message = error?.message || 'Unknown error';
+        document.title = 'ScriptBridge - Unable to load script';
+        container.innerHTML = `<section class="meta-card" role="alert">
+            <h2>Unable to load script</h2>
+            <p id="load-error-detail">${escHtml(message)}</p>
+            ${downloadUrl ? `<p>ScriptBridge could not download the script. Downloads do not send sign-in cookies or follow redirects. A protected source may require a signed-in browser download; a network failure can look the same.</p>
+            <p>Download the file through the source site's normal signed-in page, then review its code in the ScriptBridge editor. Retrying here does not sign you in.</p>
+            <p>Requested source: <code id="failed-source">${escHtml(downloadUrl)}</code></p>` : ''}
+            <p>No scripts were changed. This page will not retry or reopen automatically.</p>
+        </section>
+        <div class="actions">
+            <button class="btn btn-install" id="btn-retry-load">Retry</button>
+            <button class="btn btn-cancel" id="btn-open-dashboard">Open Dashboard</button>
+            <button class="btn btn-cancel" id="btn-close-load">Close</button>
+        </div>`;
+        document.getElementById('btn-retry-load').addEventListener('click', () => location.reload());
+        document.getElementById('btn-open-dashboard').addEventListener('click', () => location.assign(chrome.runtime.getURL('dashboard.html')));
+        document.getElementById('btn-close-load').addEventListener('click', async () => {
+            const tab = await chrome.tabs.getCurrent();
+            if (tab?.id !== undefined) await chrome.tabs.remove(tab.id);
+            else window.close();
+        });
     }
 
     function homepageLink(value) {
@@ -157,16 +193,15 @@
             const { scriptUpdates = {} } = await chrome.storage.local.get('scriptUpdates');
             const updateInfo = scriptUpdates[updateId];
             if (!updateInfo) { container.innerHTML = '<p style="color:#f44336">No update info.</p>'; return; }
-            const res = await fetch(safeDownloadUrl(updateInfo.downloadUrl), { redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(15000) });
-            if (!res.ok) throw new Error(`Download failed: ${res.status}`);
-            code = await res.text();
+            downloadUrl = updateInfo.downloadUrl;
+            const res = await fetch(safeDownloadUrl(downloadUrl), { redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(15000) });
+            code = await readScriptResponse(res);
             meta = parseMeta(code);
             document.title = `ScriptBridge - Update: ${meta.name || existingScript.name}`;
         } else {
             // Install flow
             const res = await fetch(safeDownloadUrl(scriptUrl), { redirect: 'error', credentials: 'omit', signal: AbortSignal.timeout(15000) });
-            if (!res.ok) throw new Error(`Failed to download: ${res.status} ${res.statusText}`);
-            code = await res.text();
+            code = await readScriptResponse(res);
             meta = parseMeta(code);
             document.title = `ScriptBridge - Install: ${meta.name || 'Unknown Script'}`;
 
@@ -297,6 +332,6 @@
         });
 
     } catch(e) {
-        container.innerHTML = `<p style="color:#f44336">Error: ${escHtml(e.message)}</p>`;
+        showLoadError(e);
     }
 })();
